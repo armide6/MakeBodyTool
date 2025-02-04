@@ -23,19 +23,14 @@ namespace armide.vrchat.makebodytool
             GetWindow<ToolWindow>("素体作成ツール");
         }
 
-        bool IsExcludedName(string name)
-        {
-            return excludedNames.Contains(name, StringComparer.OrdinalIgnoreCase);
-        }
-
         // ウインドウが開かれたときに実行
-        private void OnEnable()
+        void OnEnable()
         {
             // ペア作成
             pairs = new List<(Transform, bool)> { };
-            var selectedTransform = Selection.activeTransform.Cast<Transform>();
+            var selectedTransform = Selection.activeTransform;
 
-            foreach (var child in selectedTransform)
+            foreach (Transform child in selectedTransform)
             {
                 if (IsExcludedName(child.name))
                 {
@@ -55,7 +50,8 @@ namespace armide.vrchat.makebodytool
         // ウインドウが更新されたときに実行
         void OnGUI()
         {
-            GUILayout.Label("オブジェクトを一括で非表示にして\nEditorOnlyにするツールです\n");
+            GUILayout.Label("オブジェクトを一括で非表示にして\nEditorOnlyにするツールです");
+            GUILayout.Space(10);
             GUILayout.Label("残したいオブジェクトを選択してください", EditorStyles.boldLabel);
 
 
@@ -84,11 +80,17 @@ namespace armide.vrchat.makebodytool
             {
                 foreach (var pair in pairs)
                 {
-                    //Debug.Log(x.transform.name+" : "+x.check.ToString()+" : "+x.transform.tag);
                     pair.transform.gameObject.SetActive(pair.check);
                     pair.transform.gameObject.tag = pair.check ? "Untagged" : "EditorOnly";
+                    UnityEditor.EditorUtility.SetDirty(pair.transform);
                 }
             }
+        }
+
+        // 除外する名前かチェック
+        bool IsExcludedName(string name)
+        {
+            return excludedNames.Contains(name, StringComparer.OrdinalIgnoreCase);
         }
     }
 }
