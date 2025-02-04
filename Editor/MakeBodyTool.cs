@@ -32,17 +32,7 @@ namespace armide.vrchat.makebodytool
 
             foreach (Transform child in selectedTransform)
             {
-                if (IsExcludedName(child.name))
-                {
-                    // デフォルトで除外するオブジェクト
-                    pairs.Add((child, true));
-                }
-                else
-                {
-                    // それ以外のオブジェクト
-                    pairs.Add((child, false));
-                }
-
+                pairs.Add((child, IsExcludedName(child.name)));
             }
 
         }
