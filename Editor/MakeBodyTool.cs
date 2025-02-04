@@ -5,7 +5,7 @@ using UnityEditor;
 using System.Linq;
 using System;
 
-namespace armide.vrchat.makebodytool
+namespace armide6.vrchat.makebodytool
 {
     public  class ToolWindow : EditorWindow
     {
@@ -28,13 +28,11 @@ namespace armide.vrchat.makebodytool
         {
             // ペア作成
             pairs = new List<(Transform, bool)> { };
-            var selectedTransform = Selection.activeTransform;
 
-            foreach (Transform child in selectedTransform)
+            foreach (Transform child in Selection.activeTransform)
             {
                 pairs.Add((child, IsExcludedName(child.name)));
             }
-
         }
 
         // ウインドウが更新されたときに実行
@@ -46,12 +44,13 @@ namespace armide.vrchat.makebodytool
 
 
             // デフォルトで除外するオブジェクト
+            EditorGUI.BeginDisabledGroup(true);
             foreach (var pair in pairs.Where(x => IsExcludedName(x.transform.name)))
             {
-                EditorGUI.BeginDisabledGroup(true);
                 EditorGUILayout.Toggle(pair.transform.name, pair.check);
-                EditorGUI.EndDisabledGroup();
             }
+            EditorGUI.EndDisabledGroup();
+
 
             // それ以外のオブジェクト
             foreach (var pair in pairs.Where(x => !IsExcludedName(x.transform.name)).ToArray())
@@ -59,7 +58,7 @@ namespace armide.vrchat.makebodytool
                 bool value = EditorGUILayout.Toggle(pair.transform.name, pair.check);
                 if (value != pair.check)
                 {
-                    var index = pairs.FindIndex(x => x.transform == pair.transform);
+                    int index = pairs.FindIndex(x => x.transform == pair.transform);
                     pairs[index] = (pair.transform, value);
 
                 }
