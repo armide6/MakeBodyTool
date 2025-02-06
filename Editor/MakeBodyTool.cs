@@ -4,17 +4,23 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using System;
+using Cysharp.Threading.Tasks.Triggers;
 
 namespace armide6.vrchat.makebodytool
 {
-    public  class ToolWindow : EditorWindow
+    public class ToolWindow : EditorWindow
     {
+        struct Data
+        {
+            public GameObject obj;
+            public bool value;
+            public bool exclude;
+        }
+
         // デフォルトで除外するオブジェクト
-        List<string> excludedNames = new List<string>() {"Armature", "Body", "Body_base"};
+        string[] excludeNames = {"Armature", "Body", "Body_base"};
 
-        // タプルのリスト
-        List<(Transform transform, bool check)> pairs = null;
-
+        Data[] toggleData;
 
         // コンテキストメニュー
         [MenuItem("GameObject/素体作成ツール")]
@@ -26,18 +32,25 @@ namespace armide6.vrchat.makebodytool
         // ウインドウが開かれたときに実行
         void OnEnable()
         {
-            // ペア作成
-            pairs = new List<(Transform, bool)> { };
+            var select = Selection.activeTransform;
+            toggleData = new Data[select.childCount];
 
-            foreach (Transform child in Selection.activeTransform)
+            foreach (var (o, i) in select.Cast<IEnumerable>()
+                .Select((x, i) => (((Transform)x).gameObject, i)))
             {
-                pairs.Add((child, IsExcludedName(child.name)));
+                bool v = IsExcludeName(o.name);
+                toggleData[i] = new Data {
+                    obj = o,
+                    value = IsExcludeName(o.name),
+                    exclude = IsExcludeName(o.name)
+                };
             }
         }
 
         // ウインドウが更新されたときに実行
         void OnGUI()
         {
+
             GUILayout.Label("オブジェクトを一括で非表示にして\nEditorOnlyにするツールです");
             GUILayout.Space(10);
             GUILayout.Label("残したいオブジェクトを選択してください", EditorStyles.boldLabel);
@@ -45,41 +58,36 @@ namespace armide6.vrchat.makebodytool
 
             // デフォルトで除外するオブジェクト
             EditorGUI.BeginDisabledGroup(true);
-            foreach (var pair in pairs.Where(x => IsExcludedName(x.transform.name)))
+            foreach (var d in toggleData.Where(x => x.exclude))
             {
-                EditorGUILayout.Toggle(pair.transform.name, pair.check);
+                EditorGUILayout.Toggle(d.obj.name, d.value);
             }
             EditorGUI.EndDisabledGroup();
 
 
             // それ以外のオブジェクト
-            foreach (var pair in pairs.Where(x => !IsExcludedName(x.transform.name)).ToArray())
+            foreach (ref var d in toggleData.AsSpan())
             {
-                bool value = EditorGUILayout.Toggle(pair.transform.name, pair.check);
-                if (value != pair.check)
-                {
-                    int index = pairs.FindIndex(x => x.transform == pair.transform);
-                    pairs[index] = (pair.transform, value);
-
-                }
+                if (d.exclude) continue;
+                d.value = EditorGUILayout.Toggle(d.obj.name, d.value);
             }
 
             // 実行ボタン
             if (GUILayout.Button("実行"))
             {
-                foreach (var pair in pairs)
+                foreach (var d in toggleData)
                 {
-                    pair.transform.gameObject.SetActive(pair.check);
-                    pair.transform.gameObject.tag = pair.check ? "Untagged" : "EditorOnly";
-                    UnityEditor.EditorUtility.SetDirty(pair.transform);
+                    d.obj.SetActive(d.value);
+                    d.obj.tag = d.value ? "Untagged" : "EditorOnly";
+                    UnityEditor.EditorUtility.SetDirty(d.obj);
                 }
             }
         }
 
         // 除外する名前かチェック
-        bool IsExcludedName(string name)
+        bool IsExcludeName(string name)
         {
-            return excludedNames.Contains(name, StringComparer.OrdinalIgnoreCase);
+            return excludeNames.Contains(name, StringComparer.OrdinalIgnoreCase);
         }
     }
 }
